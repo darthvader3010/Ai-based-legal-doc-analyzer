@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Legal Document Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 40px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 30px;
+        }
+        
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 1.1em;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+        
+        .tab:hover {
+            color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+        
+        .upload-area.dragover {
+            background: #e6e9ff;
+            border-color: #764ba2;
+        }
+        
+        .upload-icon {
+            font-size: 4em;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .results {
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        .result-section {
+            margin-bottom: 25px;
+        }
+        
+        .result-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        .result-content {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .list-item {
+            padding: 12px;
+            background: white;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .error {
+            background: #fff0f0;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #c33;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .keyword-highlight {
+            background: #ffeb3b;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .search-match {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #764ba2;
+            font-family: monospace;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚖️ AI Legal Document Analyzer</h1>
+            <p class="subtitle">Analyze, summarize, and search legal documents with AI</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('analyze')">Analyze Document</button>
+                <button class="tab" onclick="switchTab('search')">Search Keywords</button>
+            </div>
+            
+            <!-- Analyze Tab -->
+            <div id="analyze-tab" class="tab-content active">
+                <div class="upload-area" id="dropZone1">
+                    <div class="upload-icon">📄</div>
+                    <h3>Drop your legal document here</h3>
+                    <p style="color: #666; margin: 15px 0;">or</p>
+                    <label for="fileInput1" class="btn">Choose File</label>
+                    <input type="file" id="fileInput1" accept=".pdf,.docx,.txt">
+                    <p style="margin-top: 15px; color: #999;">Supported formats: PDF, DOCX, TXT (Max 16MB)</p>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button class="btn" id="analyzeBtn" onclick="analyzeDocument()" disabled>
+                        Analyze Document
+                    </button>
+                </div>
+                
+                <div class="loading" id="loading1">
+                    <div class="spinner"></div>
+                    <p>Analyzing document... This may take a moment.</p>
+                </div>
+                
+                <div class="results" id="results1"></div>
+            </div>
+            
+            <!-- Search Tab -->
+            <div id="search-tab" class="tab-content">
+                <div class="upload-area" id="dropZone2">
+                    <div class="upload-icon">📄</div>
+                    <h3>Drop your legal document here</h3>
+                    <p style="color: #666; margin: 15px 0;">or</p>
+                    <label for="fileInput2" class="btn">Choose File</label>
+                    <input type="file" id="fileInput2" accept=".pdf,.docx,.txt">
+                    <p style="margin-top: 15px; color: #999;">Supported formats: PDF, DOCX, TXT (Max 16MB)</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="keywords">Keywords to Search (comma-separated):</label>
+                    <input type="text" id="keywords" placeholder="e.g., liability, warranty, termination">
+                </div>
+                
+                <div style="text-align: center;">
+                    <button class="btn" id="searchBtn" onclick="searchDocument()" disabled>
+                        Search Document
+                    </button>
+                </div>
+                
+                <div class="loading" id="loading2">
+                    <div class="spinner"></div>
+                    <p>Searching document...</p>
+                </div>
+                
+                <div class="results" id="results2"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentFile1 = null;
+        let currentFile2 = null;
+        
+        // Tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+        }
+        
+        // File input handling for analyze tab
+        document.getElementById('fileInput1').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                currentFile1 = e.target.files[0];
+                document.getElementById('analyzeBtn').disabled = false;
+                showFileInfo('dropZone1', currentFile1);
+            }
+        });
+        
+        // File input handling for search tab
+        document.getElementById('fileInput2').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                currentFile2 = e.target.files[0];
+                updateSearchButton();
+                showFileInfo('dropZone2', currentFile2);
+            }
+        });
+        
+        // Keywords input handling
+        document.getElementById('keywords').addEventListener('input', updateSearchButton);
+        
+        function updateSearchButton() {
+            const hasFile = currentFile2 !== null;
+            const hasKeywords = document.getElementById('keywords').value.trim() !== '';
+            document.getElementById('searchBtn').disabled = !(hasFile && hasKeywords);
+        }
+        
+        function showFileInfo(dropZoneId, file) {
+            const dropZone = document.getElementById(dropZoneId);
+            const icon = dropZone.querySelector('.upload-icon');
+            const heading = dropZone.querySelector('h3');
+            
+            icon.textContent = '✅';
+            heading.textContent = `Selected: ${file.name}`;
+        }
+        
+        // Drag and drop for analyze tab
+        const dropZone1 = document.getElementById('dropZone1');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone1.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone1.addEventListener(eventName, () => dropZone1.classList.add('dragover'), false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone1.addEventListener(eventName, () => dropZone1.classList.remove('dragover'), false);
+        });
+        
+        dropZone1.addEventListener('drop', function(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                currentFile1 = files[0];
+                document.getElementById('analyzeBtn').disabled = false;
+                showFileInfo('dropZone1', currentFile1);
+            }
+        });
+        
+        // Drag and drop for search tab
+        const dropZone2 = document.getElementById('dropZone2');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone2.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone2.addEventListener(eventName, () => dropZone2.classList.add('dragover'), false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone2.addEventListener(eventName, () => dropZone2.classList.remove('dragover'), false);
+        });
+        
+        dropZone2.addEventListener('drop', function(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                currentFile2 = files[0];
+                updateSearchButton();
+                showFileInfo('dropZone2', currentFile2);
+            }
+        });
+        
+        // Analyze document
+        async function analyzeDocument() {
+            if (!currentFile1) return;
+            
+            const formData = new FormData();
+            formData.append('file', currentFile1);
+            
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('loading1').classList.add('show');
+            document.getElementById('results1').classList.remove('show');
+            document.getElementById('results1').innerHTML = '';
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayAnalysisResults(data);
+                } else {
+                    displayError('results1', data.error || 'An error occurred');
+                }
+            } catch (error) {
+                displayError('results1', 'Network error: ' + error.message);
+            } finally {
+                document.getElementById('loading1').classList.remove('show');
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+        
+        // Search document
+        async function searchDocument() {
+            if (!currentFile2) return;
+            
+            const keywords = document.getElementById('keywords').value;
+            if (!keywords.trim()) return;
+            
+            const formData = new FormData();
+            formData.append('file', currentFile2);
+            formData.append('keywords', keywords);
+            
+            document.getElementById('searchBtn').disabled = true;
+            document.getElementById('loading2').classList.add('show');
+            document.getElementById('results2').classList.remove('show');
+            document.getElementById('results2').innerHTML = '';
+            
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displaySearchResults(data);
+                } else {
+                    displayError('results2', data.error || 'An error occurred');
+                }
+            } catch (error) {
+                displayError('results2', 'Network error: ' + error.message);
+            } finally {
+                document.getElementById('loading2').classList.remove('show');
+                updateSearchButton();
+            }
+        }
+        
+        function displayAnalysisResults(data) {
+            const resultsDiv = document.getElementById('results1');
+            
+            let html = '<h2 style="color: #667eea; margin-bottom: 20px;">Analysis Results</h2>';
+            
+            // Statistics
+            html += '<div class="stat-grid">';
+            html += `<div class="stat-card">
+                        <div class="stat-number">${data.word_count.toLocaleString()}</div>
+                        <div class="stat-label">Words</div>
+                     </div>`;
+            html += `<div class="stat-card">
+                        <div class="stat-number">${data.clauses.length}</div>
+                        <div class="stat-label">Clauses</div>
+                     </div>`;
+            html += `<div class="stat-card">
+                        <div class="stat-number">${data.definitions.length}</div>
+                        <div class="stat-label">Definitions</div>
+                     </div>`;
+            html += `<div class="stat-card">
+                        <div class="stat-number">${data.obligations.length}</div>
+                        <div class="stat-label">Obligations</div>
+                     </div>`;
+            html += '</div>';
+            
+            // Summary
+            html += '<div class="result-section">';
+            html += '<h3>📋 Document Summary</h3>';
+            html += `<div class="result-content">${escapeHtml(data.summary)}</div>`;
+            html += '</div>';
+            
+            // Key Points
+            if (data.key_points && data.key_points.length > 0) {
+                html += '<div class="result-section">';
+                html += '<h3>🎯 Key Points</h3>';
+                html += '<div class="result-content">';
+                data.key_points.forEach(point => {
+                    html += `<div class="list-item">${escapeHtml(point)}</div>`;
+                });
+                html += '</div></div>';
+            }
+            
+            // Clauses
+            if (data.clauses.length > 0) {
+                html += '<div class="result-section">';
+                html += '<h3>📑 Extracted Clauses</h3>';
+                html += '<div class="result-content">';
+                data.clauses.forEach(clause => {
+                    html += `<div class="list-item"><strong>Clause ${escapeHtml(clause.number)}:</strong> ${escapeHtml(clause.text)}</div>`;
+                });
+                html += '</div></div>';
+            }
+            
+            // Definitions
+            if (data.definitions.length > 0) {
+                html += '<div class="result-section">';
+                html += '<h3>📖 Key Definitions</h3>';
+                html += '<div class="result-content">';
+                data.definitions.slice(0, 5).forEach(def => {
+                    html += `<div class="list-item"><strong>"${escapeHtml(def.term)}"</strong>: ${escapeHtml(def.definition)}</div>`;
+                });
+                html += '</div></div>';
+            }
+            
+            // Obligations
+            if (data.obligations.length > 0) {
+                html += '<div class="result-section">';
+                html += '<h3>⚠️ Obligations & Requirements</h3>';
+                html += '<div class="result-content">';
+                data.obligations.slice(0, 5).forEach(obl => {
+                    html += `<div class="list-item">${escapeHtml(obl)}</div>`;
+                });
+                html += '</div></div>';
+            }
+            
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('show');
+        }
+        
+        function displaySearchResults(data) {
+            const resultsDiv = document.getElementById('results2');
+            
+            let html = '<h2 style="color: #667eea; margin-bottom: 20px;">Search Results</h2>';
+            
+            html += `<p style="margin-bottom: 20px;"><strong>Total matches found:</strong> ${data.total_matches}</p>`;
+            
+            if (data.total_matches === 0) {
+                html += '<div class="result-content">No matches found for the specified keywords.</div>';
+            } else {
+                for (const [keyword, matches] of Object.entries(data.results)) {
+                    html += '<div class="result-section">';
+                    html += `<h3>🔍 Keyword: "${escapeHtml(keyword)}" (${matches.length} matches)</h3>`;
+                    html += '<div class="result-content">';
+                    matches.forEach(match => {
+                        // Replace markdown bold with HTML
+                        let htmlMatch = escapeHtml(match).replace(/\*\*([^*]+)\*\*/g, '<span class="keyword-highlight">$1</span>');
+                        html += `<div class="search-match">${htmlMatch}</div>`;
+                    });
+                    html += '</div></div>';
+                }
+            }
+            
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('show');
+        }
+        
+        function displayError(resultsId, message) {
+            const resultsDiv = document.getElementById(resultsId);
+            resultsDiv.innerHTML = `<div class="error">❌ Error: ${escapeHtml(message)}</div>`;
+            resultsDiv.classList.add('show');
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
